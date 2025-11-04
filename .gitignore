@@ -1,7 +1,3 @@
 /node_modules
 /dist
-/prisma/migrations
-/prisma/schema.prisma
-/prisma/seed.ts
-/prisma/seed.ts
 .env

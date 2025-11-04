@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 export default function userRouter(prisma: PrismaClient) {
     const router = Router()
@@ -48,11 +49,12 @@ export default function userRouter(prisma: PrismaClient) {
     router.post("/", async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "email and password required" });
+  const hashedPassword = await bcrypt.hash(password, 10);
   const name = email.split("@")[0];
   const user = await prisma.user.upsert({
     where: { email },
     update: { name },
-    create: { email, password, name },
+    create: { email, password: hashedPassword, name },
   });
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || "secret", { expiresIn: "7d" });
   console.log("user", user);
