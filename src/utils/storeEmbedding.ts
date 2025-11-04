@@ -1,5 +1,7 @@
 import { getVectorCollection } from "../model_call/vectorService";
-import { extractSummaryAndActions } from "../model_call/geminiApi";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export async function storeMeetingVector({
   meetingId,
@@ -37,8 +39,12 @@ try{
 
 
 export async function searchSimilarMeetings(query: string, userId: string, topK = 5) {
-    const result = await extractSummaryAndActions(query);
-    const embedding = result.embedding || [];
+    // Generate embedding for the query string only
+    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const embedding_model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    const embedding_result = await embedding_model.embedContent(query);
+    const embedding = embedding_result.embedding.values || [];
     if (!embedding || embedding.length === 0) {
     //   throw new Error("No embedding found");
       console.error("No embedding found");

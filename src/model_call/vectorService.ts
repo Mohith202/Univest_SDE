@@ -8,7 +8,10 @@ const client = new MongoClient(uri);
 
 export async function getVectorCollection() {
     try{
-        if (!client.topology?.isConnected()) {
+        // Check if client is already connected, if not connect
+        try {
+            await client.db("admin").command({ ping: 1 });
+        } catch {
             await client.connect();
         }
         return client.db("univest").collection("meetings_vector");
