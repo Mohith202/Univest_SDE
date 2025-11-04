@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import meetingRouter from "./routes/meetings";
+import userRouter from "./routes/user";
 import authMiddleware from "./middleware/auth";
 import jwt from "jsonwebtoken";
 import swaggerUi from "swagger-ui-express";
@@ -29,11 +30,17 @@ app.post("/token", (req, res) => {
   res.json({ token });
 });
 
+app.use("/users", userRouter(prisma));
+
 // Protected meetings endpoints
 app.use("/meetings", authMiddleware, meetingRouter(prisma));
 
-// Swagger docs
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Swagger docs (persist auth so token stays between calls)
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, { swaggerOptions: { persistAuthorization: true } })
+);
 app.get("/docs.json", (req, res) => res.json(swaggerSpec));
 
 const port = process.env.PORT || 3000;

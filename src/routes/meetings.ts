@@ -72,8 +72,6 @@ export default function meetingRouter(prisma: PrismaClient) {
           transcript,
           summary: result.summary,
           actionItems: result.actionItems,
-          // embedding is optional and can be null; Prisma Unsupported type accepts null
-          embedding: null,
           userId: user.id,
         },
       });
