@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
-import { extractSummaryAndActions } from "../model_call/open_Ai";
+import { PrismaClient, Prisma } from "@prisma/client";
+import { extractSummaryAndActions } from "../model_call/geminiApi";
+import { storeMeetingVector } from "../utils/storeEmbedding";
 
 export default function meetingRouter(prisma: PrismaClient) {
   const router = Router();
@@ -21,6 +22,9 @@ export default function meetingRouter(prisma: PrismaClient) {
    *         application/json:
    *           schema:
    *             $ref: '#/components/schemas/CreateMeetingRequest'
+   *         example:
+   *           title: "Sprint Planning"
+   *           transcript: "Team discussed project deadlines..."
    *     responses:
    *       201:
    *         description: Created
@@ -52,19 +56,11 @@ export default function meetingRouter(prisma: PrismaClient) {
     if (!title || !transcript) return res.status(400).json({ error: "title and transcript required" });
 
     try {
-      const authUser = (req as any).user as { username?: string } | undefined;
-      const username = authUser?.username;
-      if (!username) return res.status(401).json({ error: "unauthorized" });
+      const authUser = (req as any).user as { userId?: string } | undefined;
+      const userId = authUser?.userId;
+      if (!userId) return res.status(401).json({ error: "unauthorized" });
 
-      // Ensure a user exists (dev-friendly upsert based on email)
-      const email = `${username}@example.com`;
-      const user = await prisma.user.upsert({
-        where: { email },
-        update: { name: username },
-        create: { email, password: "dev", name: username },
-      });
-
-      const result = await extractSummaryAndActions(transcript);
+      const result = await extractSummaryAndActions(title,transcript);
 
       const created = await prisma.meeting.create({
         data: {
@@ -72,8 +68,16 @@ export default function meetingRouter(prisma: PrismaClient) {
           transcript,
           summary: result.summary,
           actionItems: result.actionItems,
-          userId: user.id,
+          userId: userId,
         },
+      });
+
+      await storeMeetingVector({
+        meetingId: created.id,
+        userId: userId,
+        title: title,
+        embedding: result.embedding || [],
+        createdAt: new Date(),
       });
 
       res.status(201).json(created);

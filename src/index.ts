@@ -18,17 +18,7 @@ const prisma = new PrismaClient();
 // Simple health
 app.get("/", (req, res) => res.json({ ok: true }));
 
-// Auth: a simple route to get a token for testing (in production you'd have users)
-app.post("/token", (req, res) => {
-  // For simplicity allow a "username" in body, issue token
-  const { username } = req.body;
-  if (!username) return res.status(400).json({ error: "username required" });
-  // Create JWT (expires in 7d)
-  const token = jwt.sign({ username }, process.env.JWT_SECRET || "secret", {
-    expiresIn: "7d",
-  });
-  res.json({ token });
-});
+
 
 app.use("/users", userRouter(prisma));
 

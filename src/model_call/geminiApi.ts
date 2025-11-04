@@ -11,13 +11,19 @@ export type ExtractResult = {
   embedding?: number[] | null;
 };
 
-export async function extractSummaryAndActions(transcript: string): Promise<ExtractResult> {
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+export async function extractSummaryAndActions(title: string, transcript: string): Promise<ExtractResult> {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
-  const prompt = `You are an AI meeting assistant.\n\nHere is a meeting transcript:\n${transcript}\n\nExtract the following:\n1. A concise summary (3–5 sentences).\n2. A list of action items with responsible persons and deadlines if mentioned.\n\nReturn only valid JSON with this structure:\n{\n  "summary": "string",\n  "actions": [\n    { "task": "string", "owner": "string", "deadline": "string (if mentioned)" }\n  ]\n}`;
+  const prompt = `You are an AI meeting assistant.\n\nHere is a meeting title: ${title}\n\nHere is a meeting transcript:\n${transcript}\n\nExtract the following:\n1. A concise summary (3–5 sentences).\n2. A list of action items with responsible persons and deadlines if mentioned.\n\nReturn only valid JSON with this structure:\n{\n  "summary": "string",\n  "actions": [\n    { "task": "string", "owner": "string", "deadline": "string (if mentioned)" }\n  ]\n}`;
 
   const result = await model.generateContent(prompt);
   const text = result.response.text();
+
+  const embedding_model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+  const embedding_result = await embedding_model.embedContent(text);
+  const embedding = embedding_result.embedding.values || [];
+
+
 
   let parsed: { summary?: string; actions?: Array<{ task?: string; owner?: string; deadline?: string }> } = {};
   try {
@@ -42,5 +48,5 @@ export async function extractSummaryAndActions(transcript: string): Promise<Extr
     return `${task}${ownerPart}${deadlinePart}`.trim();
   }).filter(Boolean);
 
-  return { summary, actionItems, embedding: null };
+  return { summary, actionItems, embedding: embedding as number[] };
 }
