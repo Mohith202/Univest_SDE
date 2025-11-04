@@ -7,11 +7,14 @@ import authMiddleware from "./middleware/auth";
 import jwt from "jsonwebtoken";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./swagger";
+import cors from "cors";
+
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 const prisma = new PrismaClient();
 
